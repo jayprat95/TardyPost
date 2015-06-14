@@ -20,5 +20,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>LSApplicationCategoryType</key>
+	<string>&lt;key&gt;UIStatusBarHidden&lt;/key&gt;
+&lt;true/&gt;
+&lt;key&gt;UIViewControllerBasedStatusBarAppearance&lt;/key&gt;
+&lt;false/&gt;</string>
 </dict>
 </plist>

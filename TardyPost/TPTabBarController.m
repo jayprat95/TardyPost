@@ -8,6 +8,9 @@
 
 #import "TPTabBarController.h"
 #import "TPFormViewController.h"
+#import <BFPaperButton.h>
+#import <Canvas.h>
+#import "UIColor+BFPaperColors.h"
 
 @interface TPTabBarController ()
 
@@ -24,6 +27,7 @@
     // Do any additional setup after loading the view.
     
     [self addCenterButtonWithImage:[UIImage imageNamed:@"hood.png"] highlightImage:[UIImage imageNamed:@"hood-selected.png"] target:self action:@selector(buttonPressed:)];
+    [[UITabBar appearance] setTintColor:[UIColor paperColorRed]];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -35,56 +39,42 @@
 // Create a custom UIButton and add it to the center of our tab bar
 - (void)addCenterButtonWithImage:(UIImage *)buttonImage highlightImage:(UIImage *)highlightImage target:(id)target action:(SEL)action
 {
-    UIButton* button = [UIButton buttonWithType:UIButtonTypeCustom];
-    button.autoresizingMask = UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin;
-    button.frame = CGRectMake(0.0, 0.0, buttonImage.size.width, buttonImage.size.height);
-    [button setBackgroundImage:buttonImage forState:UIControlStateNormal];
-    [button setBackgroundImage:highlightImage forState:UIControlStateHighlighted];
+    BFPaperButton *circle1 = [[BFPaperButton alloc] initWithFrame:CGRectMake(20, 468, 86, 86) raised:YES];
+    [circle1 setBackgroundColor:[UIColor paperColorRed]];
+    [circle1 setImage:[UIImage imageNamed:@"Up-50.png" ] forState:UIControlStateNormal];
+    [circle1 setImage:[UIImage imageNamed:@"Up-50.png" ] forState:UIControlStateSelected];
+
+    [circle1 addTarget:self action:@selector(buttonPressed:) forControlEvents:UIControlEventTouchUpInside];
+    circle1.cornerRadius = circle1.frame.size.width / 2;
+    circle1.rippleFromTapLocation = NO;
     
+    circle1.autoresizingMask = UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin;
     CGFloat heightDifference = buttonImage.size.height - self.tabBar.frame.size.height;
     if (heightDifference < 0) {
-        button.center = self.tabBar.center;
+        circle1.center = self.tabBar.center;
     } else {
         CGPoint center = self.tabBar.center;
         center.y = center.y - heightDifference/2.0;
-        button.center = center;
+        circle1.center = center;
     }
     
-    [button addTarget:target action:action forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:circle1];
     
-    [self.view addSubview:button];
-    self.centerButton = button;
 }
 
 
 
 - (void)buttonPressed:(id)sender
 {
-    [self performSelector:@selector(doHighlight:) withObject:sender afterDelay:0];
-    
-
-//    
-    
-}
-
-- (void)doHighlight:(UIButton*)b {
-    [b setHighlighted:YES];
-    [NSThread sleepForTimeInterval:0.15f];
-    [b setHighlighted:NO];
     TPFormViewController *viewController = [[TPFormViewController alloc] init];
-    [self presentViewController:viewController animated:YES completion:nil]; 
-}
-
-- (void)doNotHighlight:(UIButton*)b {
-    [b setHighlighted:NO];
+    [self presentViewController:viewController animated:YES completion:nil];    
+    
 }
 
 
 - (void)tabBar:(UITabBar *)tabBar didSelectItem:(UITabBarItem *)item
 {
-    if(self.tabBarController.selectedIndex != 2){
-        [self performSelector:@selector(doNotHighlight:) withObject:centerButton afterDelay:0];
-    }
+
 }
 
 - (BOOL)tabBarHidden {

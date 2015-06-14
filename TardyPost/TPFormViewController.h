@@ -8,6 +8,6 @@
 
 #import <UIKit/UIKit.h>
 
-@interface TPFormViewController : UIViewController
+@interface TPFormViewController : UIViewController <UIImagePickerControllerDelegate>
 
 @end
