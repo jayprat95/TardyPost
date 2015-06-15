@@ -11,33 +11,85 @@
 #import <Canvas.h>
 
 
-@interface TPFormViewController () <UIImagePickerControllerDelegate, UITextViewDelegate>
-@property (weak, nonatomic) IBOutlet UIImageView *pictureView;
-@property (weak, nonatomic) IBOutlet UIButton *chooseButton;
+
+
+@interface TPFormViewController () <UIImagePickerControllerDelegate, UITextViewDelegate, UITextFieldDelegate>
 @property (weak, nonatomic) IBOutlet UINavigationBar *navBar;
 @property (weak, nonatomic) IBOutlet UIView *topView;
 @property (weak, nonatomic) IBOutlet UITextView *instaCaption;
 @property (weak, nonatomic) IBOutlet UILabel *tweetCountLabel;
 @property (weak, nonatomic) IBOutlet UIView *labelShakeView;
+@property (nonatomic, strong) NSArray *tagsArray;
+@property (weak, nonatomic) UIImagePickerController *pickerView;
+@property (weak, nonatomic) IBOutlet UITextField *dateText;
+@property UIImage *imageSelected;
+@property(nonatomic, assign) int viewCount;
+
+
 
 
 @end
 
+
+@implementation UITextField (DisableCopyPaste)
+
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender
+{
+    if (action == @selector(cut:) || action == @selector(copy:) ||
+        action == @selector(select:))
+        {
+                return [super canPerformAction:action withSender:sender];
+        }
+        return NO;
+}
+
+@end
+
+
 @implementation TPFormViewController
+
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view from its nib.
+    self.viewCount = 0;
     [self.navBar setBarTintColor:[UIColor paperColorRed]];
     [self.navBar setBackgroundColor:[UIColor paperColorRed]];
     [self.topView setBackgroundColor:[UIColor paperColorRed]];
     [self.tweetCountLabel setTextColor:[UIColor paperColorRed]];
-    [self.tweetCountLabel setText:@"150 Characters Remaining"];
+    [self.tweetCountLabel setText:@"0 Characters"];
     [self.labelShakeView setOpaque:YES];
+    [self.dateText setText: [self getCurrentDateString]];
+    [[self.dateText valueForKey:@"textInputTraits"] setValue:[UIColor clearColor] forKey:@"insertionPointColor"];
+    [self.dateText setDelegate:self];
+    UIDatePicker *datePicker = [[UIDatePicker alloc]init];
+    [datePicker setMinimumDate: [NSDate date]];
+    [datePicker setDatePickerMode:UIDatePickerModeDateAndTime];
+    [datePicker addTarget:self action:@selector(dateIsChanged:) forControlEvents:UIControlEventValueChanged];
+    
+    
+    
+    self.dateText.inputView = datePicker;
     self.instaCaption.delegate = self;
-    
-    
 
+}
+
+- (void)viewDidAppear:(BOOL)animated {
+    
+    if (self.viewCount > 0)
+    {
+        [self dismissViewControllerAnimated:YES completion:nil];
+    }
+    if ((self.imageSelected == nil || self.imageSelected == NULL) && self.viewCount == 0)
+    {
+        UIImagePickerController *picker = [[UIImagePickerController alloc] init];
+        picker.delegate = self;
+        picker.allowsEditing = YES;
+        picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+        [self presentViewController:picker animated:YES completion:NULL];
+        self.viewCount++;
+    }
+    
 }
 
 - (void)didReceiveMemoryWarning {
@@ -54,16 +106,39 @@
 }
 
 
-- (IBAction)chooseButtonClicked:(id)sender {
-    
-    UIImagePickerController *picker = [[UIImagePickerController alloc] init];
-    picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
-    picker.delegate = self;
-    
-    
-    [self presentViewController:picker animated:YES completion:nil];
+//- (IBAction)chooseButtonClicked:(id)sender {
+//    
+//    UIImagePickerController *picker = [[UIImagePickerController alloc] init];
+//    picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+//    picker.delegate = self;
+//
+//    [self presentViewController:picker animated:YES completion:nil];
+//}
+
+
+
+
+-(NSString *) getCurrentDateString {
+    NSDateFormatter *DateFormatter=[[NSDateFormatter alloc] init];
+    [DateFormatter setDateFormat:@"yyyy/MM/dd h:mm a"];
+    return [DateFormatter stringFromDate:[NSDate date]];
 }
 
+- (IBAction)dateTextClicked:(id)sender {
+    [self.dateText setTextColor:[UIColor blueColor]];
+    [NSThread sleepForTimeInterval:0.5f];
+    [self.dateText setTextColor:[UIColor lightGrayColor]];
+}
+
+
+- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    [super touchesBegan:touches withEvent:event];
+    [self.view endEditing:YES];
+}
+
+
+#pragma mark - ImagePickerDelegate Methods
 
 -(void) imagePickerController:(UIImagePickerController *)UIPicker didFinishPickingMediaWithInfo:(NSDictionary *)info
 
@@ -74,35 +149,39 @@
     NSURL* localUrl = (NSURL *)[info valueForKey:UIImagePickerControllerReferenceURL];
     
     NSLog(@"%@", localUrl);
-    
-    [self.chooseButton setHidden:YES];
-    [self.pictureView setImage: (UIImage*) [info objectForKey:UIImagePickerControllerOriginalImage]];
+    self.imageSelected = (UIImage*) [info objectForKey:UIImagePickerControllerOriginalImage];
     
 }
+
+-(void) imagePickerControllerDidCancel:(UIImagePickerController *)picker
+{
+    [self dismissViewControllerAnimated:YES completion:nil];
+    [self.view.superview removeFromSuperview];
+}
+
+
+
+#pragma mark - TextViewDelegate Methods
 
 
 -(void)textViewDidChange:(UITextView *)textView
 {
-    int len = textView.text.length;
-    [self.tweetCountLabel setText:[NSString stringWithFormat:@"%i Characters Remaining",150-len]];
+    NSUInteger textLength = textView.text.length;
+    int len = (int)textLength;
+    [self.tweetCountLabel setText:[NSString stringWithFormat:@"%i Characters", len]];
 }
 
-- (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text
-{
-    if([text length] == 0)
-    {
-        if([textView.text length] != 0)
-        {
-            return YES;
-        }
-    }
-    else if([[textView text] length] > 149)
-    {
-        [self.labelShakeView startCanvasAnimation];
-        return NO;
-    }
-    return YES;
+
+#pragma mark - DatePicker Methods
+
+- (void)dateIsChanged:(UIDatePicker *)datePicker{
+    
+    NSDateFormatter *DateFormatter=[[NSDateFormatter alloc] init];
+    [DateFormatter setDateFormat:@"yyyy/MM/dd h:mm a"];
+    NSString *dateString = [DateFormatter stringFromDate:[datePicker date]];
+    [self.dateText setText:dateString];
 }
+
 
 /*
 #pragma mark - Navigation
